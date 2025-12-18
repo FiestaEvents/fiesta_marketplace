@@ -12,16 +12,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "20" # Next.js usually needs newer Node
-
-      - name: Build Next.js
-        run: |
-          npm ci
-          npm run build
-
+      # 1. Copy Source Code ONLY
       - name: Copy files to Server
         uses: appleboy/scp-action@master
         with:
@@ -31,8 +22,11 @@ jobs:
           source: "."
           target: "/var/www/fiesta_web"
           rm: false
+          # Removed the invalid 'exclude' line.
+          # Git will naturally ignore .next and node_modules, so they won't be copied anyway.
 
-      - name: Restart PM2
+      # 2. Build & Start on Server
+      - name: Build and Restart PM2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -40,7 +34,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /var/www/fiesta_web
-            npm ci --production
-            # Start/Reload the Next.js app
+
+            # Install Dependencies
+            npm ci
+
+            # BUILD ON SERVER (This creates the .next folder)
+            npm run build
+
+            # Start/Reload PM2
             pm2 startOrReload ecosystem.config.cjs --update-env
             pm2 save
