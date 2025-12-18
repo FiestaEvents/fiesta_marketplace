@@ -2,31 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Menu,
-  X,
-  Store,
-  Search,
-  MapPin,
-  Calendar as CalIcon,
-  ArrowRight,
-  User,
-} from "lucide-react";
+import { Menu, X, Store, Search, MapPin, ArrowRight, User } from "lucide-react";
 import Image from "next/image";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const Navbar = () => {
+  // 1. ALL HOOKS MUST BE AT THE TOP
   const { t } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  // LOGIC: Differentiate between the Main Marketplace Home (Dark Hero) and Inner Pages (White Background)
-  const isMarketplaceHome = pathname === "/marketplace";
-  const isMarketplaceInner =
-    pathname?.startsWith("/marketplace") && pathname !== "/marketplace";
-  const isMarketplace = isMarketplaceHome || isMarketplaceInner;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,39 +23,45 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // 2. LOGIC VARIABLES
+  const isAuthPage = pathname?.startsWith("/auth");
+
+  const isMarketplaceHome = pathname === "/marketplace";
+  const isMarketplaceInner =
+    pathname?.startsWith("/marketplace") && pathname !== "/marketplace";
+  const isMarketplace = isMarketplaceHome || isMarketplaceInner;
+  const isDashboard = pathname?.startsWith("/dashboard");
+
+  // 3. EARLY RETURN (MUST BE AFTER ALL HOOKS)
+  if (isAuthPage || isDashboard) return null;
+
+  // 4. HANDLERS
   const handleNavClick = (id, path = "/") => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
       setIsMenuOpen(false);
     } else {
-      window.location.href = `${path}#${id}`;
+      router.push(`${path}#${id}`);
     }
   };
 
   const handlePageNavigation = (path) => {
-    window.location.href = path;
+    router.push(path);
     setIsMenuOpen(false);
   };
 
-  // --- DYNAMIC STYLES ---
+  // 5. DYNAMIC STYLES
+  let navBackground = "bg-transparent py-4";
 
-  // 1. Background Logic
-  let navBackground = "bg-transparent py-4"; // Default Landing Top
-
-  if (isMarketplaceInner) {
-    // Inner pages (Category/Details): ALWAYS White, solid, sticky
+  if (isMarketplaceInner || isDashboard) {
     navBackground =
       "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 py-2";
   } else if (scrolled) {
-    // Scrolled state (Landing or Market Home): White
     navBackground = "bg-white/95 backdrop-blur-md shadow-md py-2";
   }
 
-  // 2. Text Color Logic
-  // White text ONLY on Marketplace Home at the top. Everyone else gets Gray/Black.
   const useWhiteText = isMarketplaceHome && !scrolled;
-
   const textColor = useWhiteText ? "text-white" : "text-gray-700";
   const hoverColor = useWhiteText
     ? "hover:text-orange-200"
@@ -80,13 +73,13 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-999 transition-all duration-300 ${navBackground}`}
+      className={`fixed top-0 left-0 w-full z-[999] transition-all duration-300 ${navBackground}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 gap-8">
           {/* LOGO */}
           <div
-            className="flex items-center cursor-pointer z-1000 shrink-0 transition-opacity hover:opacity-80"
+            className="flex items-center cursor-pointer z-[1000] shrink-0 transition-opacity hover:opacity-80"
             onClick={() =>
               handlePageNavigation(isMarketplace ? "/marketplace" : "/")
             }
@@ -102,7 +95,7 @@ const Navbar = () => {
           </div>
 
           {/* CENTER CONTENT */}
-          {isMarketplace ? (
+          {isMarketplace || isDashboard ? (
             <div className="hidden md:flex flex-1 max-w-xl mx-auto transition-all duration-300">
               <div
                 className={`w-full rounded-full border flex items-center p-1.5 transition-all group shadow-sm focus-within:shadow-md focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-100 ${searchBarBg}`}
@@ -127,7 +120,7 @@ const Navbar = () => {
           ) : (
             <div className="hidden md:flex items-center space-x-8 ml-auto">
               <button
-                onClick={() => handleNavClick("venue-system")}
+                onClick={() => handlePageNavigation("/fiesta-venue")}
                 className={`${textColor} ${hoverColor} font-medium text-sm transition-colors`}
               >
                 Venue System
@@ -150,42 +143,43 @@ const Navbar = () => {
 
           {/* RIGHT ACTIONS */}
           <div className="hidden md:flex items-center gap-4">
-            <div className="relative z-1000">
+            <div className="relative z-[1000]">
               <LanguageSwitcher />
             </div>
 
-            {isMarketplace ? (
+            {isDashboard ? (
+              <button
+                onClick={() => handlePageNavigation("/dashboard")}
+                className="flex items-center gap-2 text-gray-700 font-bold border border-gray-200 px-4 py-2 rounded-full hover:bg-gray-50"
+              >
+                <User className="w-4 h-4" />
+                <span>Amine</span>
+              </button>
+            ) : (
               <>
                 <button
-                  onClick={() => handlePageNavigation("/")}
+                  onClick={() => handlePageNavigation("/partner")}
                   className={`text-sm font-semibold transition-colors px-2 ${textColor} ${hoverColor}`}
                 >
                   List your business
                 </button>
                 <button
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 ${
+                  onClick={() => handlePageNavigation("/auth/login")}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0 ${
                     useWhiteText
                       ? "bg-white text-gray-900 hover:bg-gray-100"
                       : "bg-gray-900 text-white hover:bg-gray-800"
                   }`}
                 >
-                  <User className="w-4 h-4" />
                   Sign In
                 </button>
               </>
-            ) : (
-              <button
-                onClick={() => handleNavClick("contact")}
-                className="bg-orange-600 text-white px-5 py-2 rounded-lg hover:bg-orange-700 transition-all font-medium text-sm shadow-md"
-              >
-                {t("landing.nav.contact")}
-              </button>
             )}
           </div>
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`md:hidden p-2 z-1000 ${textColor}`}
+            className={`md:hidden p-2 z-[1000] ${textColor}`}
           >
             {isMenuOpen ? (
               <X className="w-6 h-6" />
@@ -196,10 +190,41 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Menu logic remains same... */}
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white border-t border-gray-100 shadow-xl p-4 flex flex-col gap-4">
-          {/* ... Content ... */}
+        <div className="md:hidden absolute top-full left-0 w-full bg-white border-t border-gray-100 shadow-xl p-6 flex flex-col gap-4 animate-in slide-in-from-top-5">
+          {isDashboard ? (
+            <button
+              onClick={() => handlePageNavigation("/dashboard")}
+              className="flex items-center gap-3 text-lg font-bold text-gray-900"
+            >
+              <User className="w-5 h-5" /> My Account
+            </button>
+          ) : (
+            <button
+              onClick={() => handlePageNavigation("/auth/login")}
+              className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold"
+            >
+              Sign In
+            </button>
+          )}
+
+          <button
+            onClick={() => handlePageNavigation("/marketplace")}
+            className="text-left font-medium p-2 hover:bg-gray-50 rounded-lg"
+          >
+            Marketplace
+          </button>
+          <button
+            onClick={() => handlePageNavigation("/partner")}
+            className="text-left font-medium p-2 text-orange-600 bg-orange-50 rounded-lg"
+          >
+            List your business
+          </button>
+
+          <div className="flex justify-center pt-2 border-t border-gray-100">
+            <LanguageSwitcher />
+          </div>
         </div>
       )}
     </nav>

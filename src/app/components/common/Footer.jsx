@@ -4,8 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Heart } from "lucide-react";
 import Image from "next/image";
 import { t } from "i18next";
+import { usePathname } from "next/navigation";
 
 const Footer = () => {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/dashboard")) return null;
   // Reusing the smart navigation logic for footer links
   const handleNavClick = (id, path = "/") => {
     const element = document.getElementById(id);
@@ -46,7 +49,7 @@ const Footer = () => {
             <ul className="space-y-2 text-gray-400 text-sm">
               <li>
                 <button
-                  onClick={() => handleNavClick("venue-system")}
+                  onClick={() => handleNavClick("fiesta-venue")}
                   className="hover:text-white transition-all duration-300 hover:translate-x-1 inline-block"
                 >
                   Fiesta Venue

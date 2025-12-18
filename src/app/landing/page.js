@@ -204,7 +204,7 @@ const Landing = () => {
 
       {/* Products Section / Venue System Focus */}
       <section
-        id="venue-system"
+        id="fiesta-venue"
         className="relative py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-br from-gray-50 to-orange-50"
       >
         <div className="max-w-7xl mx-auto">

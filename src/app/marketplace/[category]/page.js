@@ -11,7 +11,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Search,
+  Users,
 } from "lucide-react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,11 +56,61 @@ const EVENT_TYPES = [
 ];
 
 const CATEGORY_FILTERS = [
-  { label: "Lieu de l'événement", value: "venues" },
-  { label: "Restauration", value: "catering" },
-  { label: "Ambiance & Animation", value: "music" },
-  { label: "Décoration", value: "decor" },
-  { label: "Photographie", value: "photography" }, // Added for completeness
+  {
+    label: "Lieu de l'événement",
+    value: "venues",
+    subcategories: [
+      "Salle de fêtes",
+      "Espace en plein air",
+      "Hôtel",
+      "Villa privée",
+      "Ferme",
+      "Bateau",
+    ],
+  },
+  {
+    label: "Restauration",
+    value: "catering",
+    subcategories: [
+      "Traiteur salé",
+      "Service de pâtisserie (sucré)",
+      "Service de serveur",
+      "Cocktails / Boissons",
+      "Buffet",
+      "Dîner servi",
+    ],
+  },
+  {
+    label: "Ambiance & Animation",
+    value: "music",
+    subcategories: [
+      "DJ",
+      "Orchestre",
+      "Groupe musical",
+      "Spectacle de danse",
+      "Jeux de lumières",
+    ],
+  },
+  {
+    label: "Décoration",
+    value: "decor",
+    subcategories: [
+      "Décoration florale",
+      "Décoration de table",
+      "Estrade mariés",
+      "Éclairage d'ambiance",
+    ],
+  },
+  {
+    label: "Photographie & Vidéo",
+    value: "photography",
+    subcategories: ["Photographe", "Vidéaste", "Drone", "Studio mobile"],
+  },
+  {
+    label: "Beauté & Bien-être",
+    value: "beauty",
+    subcategories: ["Coiffure", "Maquillage", "Spa & Massage", "Esthétique"],
+  },
 ];
 
 // --- 2. MOCK DATA GENERATOR ---
@@ -74,19 +124,81 @@ const getMockListings = (category) => {
       "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800",
   };
 
-  return Array.from({ length: 8 }).map((_, i) => ({
+  return Array.from({ length: 9 }).map((_, i) => ({
     id: i,
+    // Titles are more realistic to generate good slugs
     title:
       category === "venues"
-        ? `Espace ${i + 1} - Luxury`
-        : `Service Pro ${i + 1}`,
+        ? `Carthage Luxury Villa ${i + 1}`
+        : `Premium Service ${i + 1}`,
     location: TUNISIAN_GOVERNORATES[i % TUNISIAN_GOVERNORATES.length],
     price: (i + 1) * 200 + 500,
+    unit: category === "venues" ? "TND" : "TND/p",
     rating: (4.0 + Math.random()).toFixed(1),
     reviews: Math.floor(Math.random() * 100),
     tags: i % 3 === 0 ? ["Superhost"] : [],
     image: images[category] || images.default,
+    capacity: category === "venues" ? "200-500 Guests" : null,
   }));
+};
+
+// --- 3. SUB-COMPONENTS ---
+
+const CategoryAccordion = ({ category }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
+      >
+        {category.label}
+        {isOpen ? (
+          <ChevronUp className="w-4 h-4 text-gray-500" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-500" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="bg-white p-3 border-t border-gray-200 animate-in slide-in-from-top-1 duration-150">
+          <label className="flex items-center gap-3 cursor-pointer group mb-3">
+            <div className="w-4 h-4 rounded border border-gray-300 flex items-center justify-center group-hover:border-orange-500 transition-colors bg-white relative">
+              <input
+                type="checkbox"
+                className="peer appearance-none absolute inset-0 cursor-pointer"
+              />
+              <Check className="size-full text-white opacity-0 peer-checked:opacity-100 bg-orange-500 rounded transition-all" />
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              Tout sélectionner
+            </span>
+          </label>
+
+          <div className="space-y-2 ml-1">
+            {category.subcategories.map((sub) => (
+              <label
+                key={sub}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <div className="w-4 h-4 rounded border border-gray-300 flex items-center justify-center group-hover:border-orange-500 transition-colors bg-white relative">
+                  <input
+                    type="checkbox"
+                    className="peer appearance-none absolute inset-0 cursor-pointer"
+                  />
+                  <Check className=" text-white opacity-0 peer-checked:opacity-100 bg-orange-500 size-full rounded transition-all" />
+                </div>
+                <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                  {sub}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function CategoryPage({ params }) {
@@ -95,7 +207,6 @@ export default function CategoryPage({ params }) {
   const listings = getMockListings(category);
   const title = category.charAt(0).toUpperCase() + category.slice(1);
 
-  // State for collapsible sections
   const [openSections, setOpenSections] = useState({
     eventType: true,
     categories: true,
@@ -150,8 +261,8 @@ export default function CategoryPage({ params }) {
         </div>
 
         <div className="flex gap-10">
-          {/* --- SIDEBAR FILTERS (Custom UI) --- */}
-          <aside className="hidden lg:block w-72 flex-shrink-0 space-y-8">
+          {/* --- SIDEBAR FILTERS --- */}
+          <aside className="hidden lg:block w-72 shrink-0 space-y-8">
             {/* 1. Event Type */}
             <div className="border-b border-gray-100 pb-6">
               <button
@@ -178,7 +289,7 @@ export default function CategoryPage({ params }) {
                           type="checkbox"
                           className="peer appearance-none absolute inset-0 cursor-pointer"
                         />
-                        <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 bg-orange-500 w-full h-full rounded transition-all" />
+                        <Check className="size-full text-white opacity-0 peer-checked:opacity-100 bg-orange-500 rounded transition-all" />
                       </div>
                       <span className="text-sm text-gray-600 group-hover:text-gray-900">
                         {type}
@@ -189,7 +300,7 @@ export default function CategoryPage({ params }) {
               )}
             </div>
 
-            {/* 2. Categories (Accordion Style) */}
+            {/* 2. Categories (Nested Accordion) */}
             <div className="border-b border-gray-100 pb-6">
               <button
                 onClick={() => toggleSection("categories")}
@@ -204,23 +315,17 @@ export default function CategoryPage({ params }) {
               </button>
 
               {openSections.categories && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                  {CATEGORY_FILTERS.map((cat) => (
-                    <div
-                      key={cat.value}
-                      className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden"
-                    >
-                      <button className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
-                        {cat.label}
-                        <ChevronDown className="w-3 h-3 text-gray-400" />
-                      </button>
-                    </div>
-                  ))}
+                <div className="relative animate-in slide-in-from-top-2 duration-200">
+                  <div className="max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    {CATEGORY_FILTERS.map((cat) => (
+                      <CategoryAccordion key={cat.value} category={cat} />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 3. Governorats (Scrollable List) */}
+            {/* 3. Governorats */}
             <div className="border-b border-gray-100 pb-6">
               <button
                 onClick={() => toggleSection("governorates")}
@@ -236,7 +341,6 @@ export default function CategoryPage({ params }) {
 
               {openSections.governorates && (
                 <div className="relative animate-in slide-in-from-top-2 duration-200">
-                  {/* Scrollable Container */}
                   <div className="max-h-48 overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                     {TUNISIAN_GOVERNORATES.map((city) => (
                       <label
@@ -248,7 +352,7 @@ export default function CategoryPage({ params }) {
                             type="checkbox"
                             className="peer appearance-none absolute inset-0 cursor-pointer"
                           />
-                          <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 bg-orange-500 w-full h-full rounded transition-all" />
+                          <Check className="size-full text-white opacity-0 peer-checked:opacity-100 bg-orange-500  rounded transition-all" />
                         </div>
                         <span className="text-sm text-gray-600 group-hover:text-gray-900">
                           {city}
@@ -256,8 +360,7 @@ export default function CategoryPage({ params }) {
                       </label>
                     ))}
                   </div>
-                  {/* Fade effect at bottom */}
-                  <div className="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-6 bg-linear-to-t from-white to-transparent pointer-events-none"></div>
                 </div>
               )}
             </div>
@@ -279,12 +382,12 @@ export default function CategoryPage({ params }) {
               {openSections.status && (
                 <div className="animate-in slide-in-from-top-2 duration-200">
                   <label className="flex items-start gap-3 cursor-pointer group">
-                    <div className="mt-0.5 w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-orange-500 transition-colors bg-white relative flex-shrink-0">
+                    <div className="mt-0.5 w-5 h-5 rounded border border-gray-300 flex items-center justify-center group-hover:border-orange-500 transition-colors bg-white relative shrink-0">
                       <input
                         type="checkbox"
                         className="peer appearance-none absolute inset-0 cursor-pointer"
                       />
-                      <Check className="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 bg-orange-500 w-full h-full rounded transition-all" />
+                      <Check className="size-full text-white opacity-0 peer-checked:opacity-100 bg-orange-500 w-full h-full rounded transition-all" />
                     </div>
                     <div>
                       <span className="text-sm text-gray-600 group-hover:text-gray-900 block">
@@ -299,7 +402,7 @@ export default function CategoryPage({ params }) {
               )}
             </div>
 
-            {/* 5. Budget (Range) */}
+            {/* 5. Budget */}
             <div>
               <button
                 onClick={() => toggleSection("budget")}
@@ -317,15 +420,12 @@ export default function CategoryPage({ params }) {
                 <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
                   <div className="flex justify-between text-sm text-gray-500 font-medium">
                     <span>0 TND</span>
-                    <span>500 000 TND</span>
+                    <span>500k TND</span>
                   </div>
 
-                  {/* Fake Slider Visual */}
                   <div className="relative h-2 bg-gray-200 rounded-full">
-                    <div className="absolute left-0 right-0 h-full bg-gray-800 rounded-full opacity-20"></div>{" "}
-                    {/* Inactive track */}
-                    <div className="absolute left-0 w-1/2 h-full bg-gray-900 rounded-full"></div>{" "}
-                    {/* Active track demo */}
+                    <div className="absolute left-0 right-0 h-full bg-gray-800 rounded-full opacity-20"></div>
+                    <div className="absolute left-0 w-1/2 h-full bg-gray-900 rounded-full"></div>
                     <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-black border-2 border-white rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
                   </div>
 
@@ -363,62 +463,76 @@ export default function CategoryPage({ params }) {
           {/* --- RESULTS GRID --- */}
           <div className="flex-1 w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {listings.map((item) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5 }}
-                  className="group flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer"
-                >
-                  <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <button className="absolute top-3 right-3 p-2 bg-white/70 backdrop-blur-md rounded-full hover:bg-white text-gray-700 hover:text-red-500 transition-all shadow-sm z-10">
-                      <Heart className="w-4 h-4" />
-                    </button>
-                    {item.tags.includes("Superhost") && (
-                      <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-extrabold text-gray-900 uppercase tracking-wide shadow-sm flex items-center gap-1">
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />{" "}
-                        Superhost
-                      </span>
-                    )}
-                  </div>
+              {listings.map((item) => {
+                // GENERATE SLUG
+                const itemSlug = item.title.toLowerCase().replace(/ /g, "-");
 
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-orange-600 transition-colors line-clamp-1">
-                        {item.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-xs font-bold text-gray-900">
-                        <Star className="w-3.5 h-3.5 fill-black" />{" "}
-                        {item.rating}
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    whileHover={{ y: -5 }}
+                    className="group flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  >
+                    <div className="relative aspect-4/3 bg-gray-100 overflow-hidden">
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <button className="absolute top-3 right-3 p-2 bg-white/70 backdrop-blur-md rounded-full hover:bg-white text-gray-700 hover:text-red-500 transition-all shadow-sm z-10">
+                        <Heart className="w-4 h-4" />
+                      </button>
+                      {item.tags.includes("Superhost") && (
+                        <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-extrabold text-gray-900 uppercase tracking-wide shadow-sm flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />{" "}
+                          Superhost
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-gray-900 text-base leading-snug group-hover:text-orange-600 transition-colors line-clamp-1">
+                          {item.title}
+                        </h3>
+                        <div className="flex items-center gap-1 text-xs font-bold text-gray-900">
+                          <Star className="w-3.5 h-3.5 fill-black" />{" "}
+                          {item.rating}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-500 flex items-center gap-1 mb-3">
+                        <MapPin className="w-3.5 h-3.5 text-gray-400" />{" "}
+                        {item.location}
+                      </p>
+
+                      {item.capacity && (
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3 bg-gray-50 w-fit px-2 py-1 rounded-md">
+                          <Users className="w-3 h-3" /> {item.capacity}
+                        </div>
+                      )}
+
+                      <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <p className="text-lg font-bold text-gray-900">
+                          {item.price}{" "}
+                          <span className="text-xs font-normal text-gray-500">
+                            {item.unit}
+                          </span>
+                        </p>
+                        <Link
+                          href={`/marketplace/${category}/${itemSlug}`}
+                          className="text-sm font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-orange-500 hover:text-orange-600 transition-all"
+                        >
+                          Voir détails
+                        </Link>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mb-3">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />{" "}
-                      {item.location}
-                    </p>
-
-                    <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <p className="text-lg font-bold text-gray-900">
-                        {item.price}{" "}
-                        <span className="text-xs font-normal text-gray-500">
-                          TND
-                        </span>
-                      </p>
-                      <button className="text-sm font-semibold text-gray-900 underline decoration-gray-300 hover:decoration-orange-500 hover:text-orange-600 transition-all">
-                        Voir détails
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
 
             <div className="mt-12 text-center">
@@ -430,14 +544,14 @@ export default function CategoryPage({ params }) {
         </div>
       </div>
 
-      {/* MOBILE FILTERS DRAWER */}
+      {/* MOBILE FILTERS DRAWER (Simple for now) */}
       <AnimatePresence>
         {isMobileFilterOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-[2000] backdrop-blur-sm lg:hidden flex justify-end"
+            className="fixed inset-0 bg-black/60 z-2000 backdrop-blur-sm lg:hidden flex justify-end"
             onClick={() => setIsMobileFilterOpen(false)}
           >
             <motion.div
@@ -457,34 +571,8 @@ export default function CategoryPage({ params }) {
                   <X className="w-5 h-5 text-gray-700" />
                 </button>
               </div>
-
-              {/* Reuse the desktop sidebar content here for mobile logic */}
-              <div className="space-y-8 pb-20">
-                {/* Simply copying event types for demo */}
-                <div>
-                  <h3 className="font-bold mb-4">Type d'événement</h3>
-                  <div className="space-y-3">
-                    {EVENT_TYPES.map((t) => (
-                      <label key={t} className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                        />{" "}
-                        <span>{t}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 left-0 w-full bg-white pt-4 pb-2 border-t border-gray-100">
-                <button
-                  onClick={() => setIsMobileFilterOpen(false)}
-                  className="w-full bg-orange-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-orange-200 hover:bg-orange-700 transition-colors"
-                >
-                  Afficher {listings.length} Résultats
-                </button>
-              </div>
+              {/* Add mobile content reuse logic here if needed */}
+              <p>Filtres mobiles...</p>
             </motion.div>
           </motion.div>
         )}
